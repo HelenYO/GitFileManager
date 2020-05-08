@@ -24,7 +24,10 @@ cmdParser :: Parser (FS String)
 cmdParser =
   subparser
     (  command "ls" lsInfo
-    <> command "cd" cdInfo)
+    <> command "cd" cdInfo
+    <> command "find-file" findInfo
+    <> command "cat" catInfo
+    )
   where
     lsInfo =
         info
@@ -32,7 +35,12 @@ cmdParser =
           (progDesc "ls")
     cdInfo =
           info (helper <*> (cdFunc <$> (CdOptions <$> argument str (metavar "PATH" <> help "cd help")))) (progDesc "cd")
-        
+    findInfo =
+         info
+            (helper <*> (findFunc <$> (FindOptions <$> argument str (metavar "PATH" <> help "find-file help"))))
+            (progDesc "find-file")
+    catInfo =
+          info (helper <*> (catFunc <$> (CatOptions <$> argument str (metavar "PATH" <> help "cat help")))) (progDesc "cat")
 --    lsInfo =
 --      info
 --        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))
@@ -102,7 +110,7 @@ toText = foldMap pack
 main :: IO ()
 main = do
   setCurrentDirectory "/Users/elena/Desktop/files"
-  let newfs = FileSystem "/Users/elena/Desktop/files" "/Users/elena/Desktop/files" HM.empty
+  let newfs = FileSystem "/Users/elena/Desktop/files" "/Users/elena/Desktop/files" HM.empty HM.empty
   (tmp, fst) <- runStateT (FileSystemFunctions.init "/Users/elena/Desktop/files") newfs
   (tmp, fs) <- runInputT defaultSettings $ runStateT loop fst
   liftIO $ putStrLn ""

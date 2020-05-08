@@ -1,12 +1,12 @@
 module Functions
   ( --cdFunc
  -- , lsFunc
-    catFunc
-  , mkFileFunc
+--    catFunc
+    mkFileFunc
   , mkDirFunc
   , rmFunc
   , wr2FileFunc
-  , findFunc
+  --, findFunc
   , dirFunc
   , infFunc
   ) where
@@ -87,11 +87,11 @@ dirFunc DirOptions {dirName = name} = do
   t <- findAllFiles name
   print t
 
-findFunc :: FindOptions -> IO ()
-findFunc FindOptions {findName = name} = do
-  t <- findAllFiles "."
-  m <- filterM (\x -> convertBool (name == takeFName x)) t
-  print m
+--findFunc :: FindOptions -> IO ()
+--findFunc FindOptions {findName = name} = do
+--  t <- findAllFiles "."
+--  m <- filterM (\x -> convertBool (name == takeFName x)) t
+--  print m
 
 infFunc :: InfOptions -> IO ()
 infFunc InfOptions {infName = name} = do
@@ -118,8 +118,8 @@ fileDirContents path = do
   dirs <- filterM doesDirectoryExist contents
   return (files, dirs)
   
-takeFName :: FilePath -> FilePath
-takeFName = snd . splitFileName
+--takeFName :: FilePath -> FilePath
+--takeFName = snd . splitFileName
 
 findAllFiles :: FilePath -> IO [FilePath]
 findAllFiles path = do
