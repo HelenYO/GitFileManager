@@ -13,6 +13,7 @@ import           Control.Monad
   --import Types
 
 import           Control.Monad.IO.Class    (liftIO)
+import           Control.Monad.IO.Class
 import           Control.Monad.Trans.State
 import qualified Data.HashMap              as HM
 import           System.Directory
@@ -21,6 +22,7 @@ import           System.FilePath.Find
 import           System.FilePath.Posix
 
 type FS a = StateT FileSystem IO a
+--type FS = StateT FileSystem (InputT IO())
 
 takeFName :: FilePath -> FilePath
 takeFName = snd . splitFileName
@@ -99,7 +101,7 @@ lsFunc = do
   fs@FileSystem{..} <- get
   d <-  liftIO $ convertMaybe(HM.lookup nowDir mapDir)
   case d of
-    Just args -> liftIO $ putStr ""
+    Just args -> liftIO $ putStrLn "bebeb"
     Nothing -> return ()
     
 convertMaybe :: Maybe a -> IO (Maybe a)

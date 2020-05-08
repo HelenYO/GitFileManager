@@ -18,6 +18,7 @@ import           System.Directory
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.State (runStateT)
 import           Control.Monad.Trans.State
+import           Control.Monad.Trans.Class
 
 psevdolsFunc :: LsOptions -> FS ()
 psevdolsFunc str = lsFunc
@@ -99,12 +100,16 @@ main = do
   setCurrentDirectory "/Users/elena/Desktop/files/files2"
   let newfs = FileSystem "/Users/elena/Desktop/files" (Dir [] [] "/Users/elena/Desktop/files") HM.empty
   (tmp, fs) <- runStateT (FileSystemFunctions.init "/Users/elena/Desktop/files") newfs
-  runInputT defaultSettings loop
+--  (runInputT defaultSettings loop)
+  (tmp, fs) <- (runInputT defaultSettings $ runStateT loop fs)
+  liftIO $ putStrLn ""
 
-loop :: InputT IO ()
+--loop :: InputT IO ()
 --loop :: InputT (StateT [String] IO) ()
+--loop :: InputT IO ()
+loop :: StateT FileSystem (InputT IO) ()
 loop = do
-  minput <- fmap words <$> getInputLine "%: "
+  minput <- fmap words <$> (lift $ getInputLine "%: ")
   case minput of
     Nothing -> return ()
     Just args
@@ -113,10 +118,12 @@ loop = do
       | otherwise ->
         case execParserPure (prefs idm) pinfo args of
           Success io -> do
-             liftIO (io) >> loop
---            (str, newFs) <- runStateT (io) fs
---            liftIO $ io >> loop
---          --(str, newFs) <- runStateT (func ["str"]) fs
+             fs <- get
+--             (liftIO $ runStateT io fs) >> loop
+             (str, newFs) <- (liftIO $ runStateT io fs)
+          
+             loop
+             
           Failure failure -> do
             liftIO $ putStrLn "error"
             loop
