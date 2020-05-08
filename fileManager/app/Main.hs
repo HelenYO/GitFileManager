@@ -20,19 +20,22 @@ import           Control.Monad.Trans.State (runStateT)
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
 
-psevdolsFunc :: LsOptions -> FS ()
+psevdolsFunc :: LsOptions -> FS String
 psevdolsFunc str = lsFunc
 
-cmdParser :: Parser (FS ())
+cmdParser :: Parser (FS String)
 cmdParser =
   subparser
-    (command "ls" lsInfo --сейчас никак не использует аргумент, заменить 1 строчку
-      )
+    (command "ls" lsInfo)
   where
     lsInfo =
-      info
-        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))
-        (progDesc "ls")
+        info
+          (pure lsFunc)
+          (progDesc "ls")
+--    lsInfo =
+--      info
+--        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))
+--        (progDesc "ls")
 
 --psevdolsFunc :: LsOptions -> IO ()
 --psevdolsFunc str = lsFunc
@@ -97,19 +100,15 @@ toText = foldMap pack
 
 main :: IO ()
 main = do
-  setCurrentDirectory "/Users/elena/Desktop/files/files2"
-  let newfs = FileSystem "/Users/elena/Desktop/files" (Dir [] [] "/Users/elena/Desktop/files") HM.empty
-  (tmp, fs) <- runStateT (FileSystemFunctions.init "/Users/elena/Desktop/files") newfs
---  (runInputT defaultSettings loop)
-  (tmp, fs) <- (runInputT defaultSettings $ runStateT loop fs)
+  setCurrentDirectory "/Users/elena/Desktop/files"
+  let newfs = FileSystem "/Users/elena/Desktop/files" "/Users/elena/Desktop/files" HM.empty
+  (tmp, fst) <- runStateT (FileSystemFunctions.init "/Users/elena/Desktop/files") newfs
+  (tmp, fs) <- runInputT defaultSettings $ runStateT loop fst
   liftIO $ putStrLn ""
 
---loop :: InputT IO ()
---loop :: InputT (StateT [String] IO) ()
---loop :: InputT IO ()
 loop :: StateT FileSystem (InputT IO) ()
 loop = do
-  minput <- fmap words <$> (lift $ getInputLine "%: ")
+  minput <- fmap words <$> lift (getInputLine "%: ")
   case minput of
     Nothing -> return ()
     Just args
@@ -118,12 +117,11 @@ loop = do
       | otherwise ->
         case execParserPure (prefs idm) pinfo args of
           Success io -> do
-             fs <- get
---             (liftIO $ runStateT io fs) >> loop
-             (str, newFs) <- (liftIO $ runStateT io fs)
-          
-             loop
-             
+            fs <- get
+            (str, newFs) <- liftIO $ runStateT io fs
+            liftIO $ putStrLn str
+            put newFs
+            loop
           Failure failure -> do
             liftIO $ putStrLn "error"
             loop
@@ -132,185 +130,4 @@ loop = do
             loop
   where
     pinfo = info (helper <*> cmdParser) fullDesc
-----------------------------------------------------------------------------------------------
--- EXAMPLE
--- https://github.com/mineo/edabo/blob/814e2464ddba509039655d399b56d23ed3b12435/src/Edabo/CmdLine.hs
---import           Control.Applicative    ((<$>), (<*>), many)
---import           Data.Monoid            ((<>))
---import           Data.Monoid         (Monoid (..))
---import           System.Exit                    (exitFailure, exitSuccess)
---import           Options.Applicative    (Parser, argument, command, execParser,
---                                         fullDesc, header, help, helper, info,
---                                         long, metavar, optional, progDesc,
---                                         pure, short, str, strOption, subparser,
---                                         switch)
---
---data Command
---  = DeletePlaylist
---
---data Options = Options
---  { optVerbose :: Bool
---  , optCommand :: Command }
---
---deletePlaylist ::  IO ()
---deletePlaylist  = do
---  putStrLn "Server starting..."
---
---data DeletePlaylistOptions = DeletePlaylistOptions
---  { optPlaylistToDeleteName :: String
---  }
---
---parseDeletePlaylist :: Parser Command
---parseDeletePlaylist = pure DeletePlaylist
---
---subCommandParser :: Parser Command
---subCommandParser = subparser
---           (makeCommand "delete" parseDeletePlaylist "delete a playlist"
---           )
---           where withHelper f = helper <*> f
---                 makeCommand name f desc = command name (info (withHelper f)
---                                                         (progDesc desc))
---
---globalParser :: Parser Options
---globalParser = Options
---               <$> switch (short 'v'
---                           <> long "verbose")
---               <*> subCommandParser
---
---handleArgs :: IO ()
---handleArgs = execParser opts >>= run
---  where opts = info (helper <*> globalParser)
---          ( fullDesc
---          <> progDesc "playlist saver & loader"
---          <> header "edabo"
---          )
---
---run :: Options -> IO ()
---run Options {optCommand = cmd} = runCmd >>= quit
---  where runCmd = case cmd of
---                   DeletePlaylist -> deletePlaylist
---        quit e = do
---          exitSuccess
---
---main :: IO ()
---main = do
---  handleArgs
-----------------------------------------------------------------------------------------------
--- MY VERSION
---import FunctionLS
---
---import Options.Applicative
---import Data.Semigroup ((<>))
---
---import Data.String
---import Options.Applicative.Types (ReadM, readerAsk)
---import Control.Monad(join, unless)
---
---type Host = String
---type Port = Integer
---
---ls :: IO ()
---ls = lsFunc
---
---opts :: Parser (IO ())
---opts = subparser commands
---  where
---    lsCmd :: ParserInfo (IO ())
---    lsCmd = info (pure ls) idm
---
---    commands :: Mod CommandFields (IO ())
---    commands = command "ls" lsCmd
---
---cmdProgram :: IO ()
---cmdProgram = join $ execParser parser
---  where
---    parser :: ParserInfo (IO ())
---    parser = info opts idm
---
---main :: IO ()
---main = do
---  cmdProgram
---  main
-----------------------------------------------------------------------------------------------
---EXAMPLE COMMANDS
--- https://github.com/chengzh2008/restish-todo/blob/d84afa0ad6cfb9773c75f74e99b77e834e2c8528/app/Main.hs
---type Host = String
---type Port = Integer
---
---data Command = Serve Host Port
---
---newtype Options = Options { cmd:: Command }
---
----- | Start up the server and serve request
---server :: IO ()
---server = putStrLn "Server starting..."
---
---monitor :: IO ()
---monitor = putStrLn "Monitoring..."
---
----- | CLI options parser
---opts :: Parser (IO ())
---opts = subparser commands
---  where
---    serverCmd :: ParserInfo (IO ())
---    serverCmd = info (pure server) idm
---
---    monitorCmd :: ParserInfo (IO ())
---    monitorCmd = info (pure monitor) idm
---
---    commands :: Mod CommandFields (IO ())
---    commands = command "server" serverCmd
---               <> command "monitor" monitorCmd
---
---main :: IO ()
---main = join $ execParser parser
---  where
---    parser :: ParserInfo (IO ())
---    parser = info opts idm
-----------------------------------------------------------------------------------------------
-----EXAMPLE PARAMETERS
---import Options.Applicative
---import Data.Semigroup ((<>))
---
---data Sample = Sample
---  { hello      :: String
---  , quiet      :: Bool
---  , enthusiasm :: Int }
---
---sample :: Parser Sample
---sample = Sample
---      <$> strOption
---          ( long "hello"
---         <> metavar "TARGET"
---         <> help "Target for the greeting" )
---      <*> switch
---          ( long "quiet"
---         <> short 'q'
---         <> help "Whether to be quiet" )
---      <*> option auto
---          ( long "enthusiasm"
---         <> help "How enthusiastically to greet"
---         <> showDefault
---         <> value 1
---         <> metavar "INT" )
---
---
---main :: IO ()
---main = greet =<< execParser opts
---  where
---    opts = info (sample <**> helper)
---      ( fullDesc
---     <> progDesc "Print a greeting for TARGET"
---     <> header "hello - a test for optparse-applicative" )
---
---greet :: Sample -> IO ()
---greet (Sample h False n) = putStrLn $ "Hello, " ++ h ++ replicate n '!'
---greet _ = return ()
-----------------------------------------------------------------------------------------------
---
---import Lib
---import FunctionLS
---
---main :: IO ()
---main = lsFunc
 ----------------------------------------------------------------------------------------------
