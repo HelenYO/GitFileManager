@@ -2,8 +2,8 @@ module Functions
   ( --cdFunc
  -- , lsFunc
 --    catFunc
-    mkFileFunc
-  , mkDirFunc
+--    mkFileFunc
+   mkDirFunc
   , rmFunc
   , wr2FileFunc
   --, findFunc

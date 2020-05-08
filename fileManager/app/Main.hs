@@ -25,6 +25,7 @@ cmdParser =
     <> command "find-file" findInfo
     <> command "cat" catInfo
     <> command "info" infInfo
+    <> command "create-file" mkFileInfo
     )
   where
     lsInfo =
@@ -43,6 +44,10 @@ cmdParser =
           info
             (helper <*> (infFunc <$> (InfOptions <$> argument str (metavar "PATH" <> help "info help"))))
             (progDesc "info")
+    mkFileInfo =
+          info
+            (helper <*> (mkFileFunc <$> (MkFileOptions <$> argument str (metavar "PATH" <> help "create-file help"))))
+            (progDesc "create-file")
 --    lsInfo =
 --      info
 --        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))

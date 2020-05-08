@@ -11,11 +11,15 @@ module FileSystemFunctions
   , findFunc
   , catFunc
   , infFunc
+  , mkFileFunc
   ) where
 
 import           Types
 
 import           Control.Monad
+import Data.Fixed
+import Data.Time
+--import Data.Time.Calendar.Days(Day)
 import Data.Time.Clock
 
 import           Control.Monad.IO.Class
@@ -71,7 +75,6 @@ findAllFilesMy path = do
   (files, dirs) <- fileDirContentsMy path
   mydirs <- mapM initDirFromReal dirs
   myfiles <- mapM initFileFromReal files
-    --let newMapDir = foldr (\d acc -> HM.insert d (Types.Dir [] [] d) acc) HM.empty mydirs
   mydirsKV <- mapM toKVDir mydirs
   myfilesKV <- mapM toKVFile myfiles
   let dirstemp = HM.fromList mydirsKV
@@ -354,3 +357,28 @@ infDir str = do
                     show (getPermsDir args) ++ "\nfile's amount: " ++ show u ++ "\nsize: " ++ show t
               return str
     Nothing -> return ""
+
+mkFileFunc :: MkFileOptions -> FS String
+mkFimkFileFunc MkFileOptions {..} = do
+  fs@FileSystem {..} <- get
+  let d = HM.lookup nowDir mapDir
+  case d of
+    Nothing -> return ""
+    Just args -> do
+      let f = getFiles args
+      m <- liftIO $ filterM (\x -> convertBool (mkfileName == takeMyFileName x)) f
+      if null m
+        then do
+          let newPath = nowDir ++ "/" ++ mkfileName
+          let newFile = File mkfileName newPath "" (getPermsDir args) (mkUTCTime (2019, 9, 1) (15, 13, 0)) 0
+          let mapTemp = HM.insert newPath newFile mapFile
+          let newFiles = getFiles args ++ [newPath]
+          let tempdirMap = HM.delete nowDir mapDir
+          let newMapDir = HM.insert nowDir (Dir (getFolders args) newFiles nowDir (getPermsDir args)) tempdirMap
+          let newFs = FileSystem nowDir initDir newMapDir mapTemp
+          put newFs
+          return ""
+        else return "file already exist" :: (Integer, Int, Int) -> (Int, Int, Pico) -> UTCTime
+mkUTCTime (year, mon, day) (hour, min, sec) =
+  UTCTime (fromGregorian year mon day)
+          (timeOfDayToTime (TimeOfDay hour min sec))
