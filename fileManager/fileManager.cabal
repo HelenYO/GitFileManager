@@ -1,0 +1,83 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: a49267138ec3e966ba9420b6af7cb7d44ee645d12c934e5659969fa7b28997ce
+
+name:           fileManager
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/Github username here/fileManager#readme>
+homepage:       https://github.com/Github username here/fileManager#readme
+bug-reports:    https://github.com/Github username here/fileManager/issues
+author:         Author name here
+maintainer:     Author email here
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/Github username here/fileManager
+
+library
+  exposed-modules:
+      Types
+      Functions
+      FileSystemFunctions
+      Lib
+  other-modules:
+      Paths_fileManager
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+      , haskeline
+      , directory
+      , optparse-applicative
+      , text
+      , string-conversions
+      , filepath >= 1.4      && < 1.5
+      , filemanip
+      , transformers
+      , hashmap
+  default-language: Haskell2010
+
+executable fileManager-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_fileManager
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , fileManager
+    , haskeline
+    , directory
+    , optparse-applicative
+    , text
+    , string-conversions
+    , filepath >= 1.4      && < 1.5
+    , filemanip
+    , transformers
+    , hashmap
+  default-language: Haskell2010
+
+test-suite fileManager-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_fileManager
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , fileManager
+  default-language: Haskell2010
