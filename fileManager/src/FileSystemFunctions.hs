@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module FileSystemFunctions
@@ -6,7 +7,10 @@ module FileSystemFunctions
   , FileSystem(..)
   , lsFunc
   , FS(..)
+  , cdFunc
   ) where
+
+import           Types
 
 import           Control.Monad
 
@@ -15,6 +19,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Trans.State
 import qualified Data.HashMap              as HM
 import           Data.List                 (intercalate)
+import           Data.List.Split
 import           System.Directory
 import           System.FilePath
 import           System.FilePath.Find
@@ -134,6 +139,49 @@ lsFunc = do
       let s = intercalate " " b
       return (st ++ " " ++ s)
     Nothing -> return ""
+
+cdFunc :: CdOptions -> FS String
+cdFunc CdOptions {..} = do
+  fs@FileSystem {..} <- get
+  let listOfFolders = splitOn "/" cdDir
+  cdMinDir nowDir listOfFolders >>= \case
+    Nothing -> return "error: can't go to this directory"
+    Just args -> do
+      let newNowDir = args
+      let newFs = FileSystem newNowDir initDir mapDir
+      put newFs
+      return ("changed from " ++ nowDir ++ " to " ++ newNowDir)
+
+cdMinDir :: String -> [String] -> FS (Maybe String)
+cdMinDir now [] = return $ Just now
+cdMinDir now [one] = tryCdMinDir now one
+cdMinDir now (one:many) =
+  tryCdMinDir now one >>= \case
+    Nothing -> return Nothing
+    Just next -> cdMinDir next many
+
+tryCdMinDir :: String -> String -> FS (Maybe String)
+tryCdMinDir now one = do
+  let maybePath = now ++ "/" ++ one
+  fs@FileSystem {..} <- get
+  if one == "."
+    then return (Just now)
+    else if one == ".."
+           then if now == initDir
+                  then return Nothing
+                  else do
+                    let listOfFolders = splitOn "/" now
+                    let s = "/" ++ intercalate "/" (firstParts listOfFolders)
+                    return (Just (s))
+           else do
+             let d = HM.lookup maybePath mapDir
+             case d of
+               Just args -> return $ Just maybePath
+               Nothing   -> return Nothing
+
+firstParts :: [String] -> [String]
+firstParts [x] = []
+firstParts xs  = Prelude.init xs
 
 convertMaybe :: Maybe a -> IO (Maybe a)
 convertMaybe = return

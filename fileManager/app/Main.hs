@@ -20,18 +20,19 @@ import           Control.Monad.Trans.State (runStateT)
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
 
-psevdolsFunc :: LsOptions -> FS String
-psevdolsFunc str = lsFunc
-
 cmdParser :: Parser (FS String)
 cmdParser =
   subparser
-    (command "ls" lsInfo)
+    (  command "ls" lsInfo
+    <> command "cd" cdInfo)
   where
     lsInfo =
         info
           (pure lsFunc)
           (progDesc "ls")
+    cdInfo =
+          info (helper <*> (cdFunc <$> (CdOptions <$> argument str (metavar "PATH" <> help "cd help")))) (progDesc "cd")
+        
 --    lsInfo =
 --      info
 --        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))

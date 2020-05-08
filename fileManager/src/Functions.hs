@@ -1,7 +1,7 @@
 module Functions
-  ( cdFunc
+  ( --cdFunc
  -- , lsFunc
-  , catFunc
+    catFunc
   , mkFileFunc
   , mkDirFunc
   , rmFunc
@@ -14,15 +14,10 @@ module Functions
 import           Types
 
 import           Control.Monad
---import Data.List
 import           System.Directory
 import           System.FilePath
 import           System.FilePath.Find
 import           System.FilePath.Posix
-
-
-
-
 
 
 ----------------------------------------------------------------------------------------
