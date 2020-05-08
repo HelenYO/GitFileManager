@@ -1,15 +1,13 @@
-
-
 module Types where
 
 import           Control.Monad
+import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.Trans.State
 import qualified Data.HashMap              as HM
-import           System.FilePath.Posix
 import           System.Directory
 import           System.FilePath
 import           System.FilePath.Find
-import Control.Monad.IO.Class (liftIO)
+import           System.FilePath.Posix
 
 newtype CdOptions =
   CdOptions

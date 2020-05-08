@@ -18,9 +18,9 @@ module FileSystemFunctions
 import           Types
 
 import           Control.Monad
-import Data.Fixed
-import Data.Time
-import Data.Time.Clock
+import           Data.Fixed
+import           Data.Time
+import           Data.Time.Clock
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.State
@@ -34,7 +34,6 @@ import           System.FilePath.Posix
 
 type FS a = StateT FileSystem IO a
 
---type FS = StateT FileSystem (InputT IO())
 takeFName :: FilePath -> FilePath
 takeFName = snd . splitFileName
 
@@ -48,9 +47,9 @@ initFileFromReal fp = do
   return (File s fp m p k r)
 
 initDirFromReal :: FilePath -> FS Dir
-initDirFromReal fp =  do
-    p <- liftIO (getPermissions fp)
-    return (FileSystemFunctions.Dir [] [] fp p)
+initDirFromReal fp = do
+  p <- liftIO (getPermissions fp)
+  return (FileSystemFunctions.Dir [] [] fp p)
 
 toKVDir :: Dir -> FS (FilePath, Dir)
 toKVDir d@FileSystemFunctions.Dir {path = p} = return (p, d)
@@ -62,7 +61,7 @@ getDirectoryContentsPathMy :: FilePath -> IO [FilePath]
 getDirectoryContentsPathMy path = map (path </>) . filter (`notElem` [".", ".."]) <$> getDirectoryContents path
 
 fileDirContentsMy :: FilePath -> FS ([FilePath], [FilePath])
-fileDirContentsMy path -- будем считать, что это запускается от мапы, в которой уже лежт эта директория
+fileDirContentsMy path
  = do
   contents <- liftIO $ getDirectoryContentsPathMy path
   files <- liftIO $ filterM doesFileExist contents
@@ -121,9 +120,9 @@ getMapDir FileSystem {..} = mapDir
 
 data Dir =
   Dir
-    { folders :: [String]
-    , files   :: [String]
-    , path    :: String
+    { folders  :: [String]
+    , files    :: [String]
+    , path     :: String
     , permsDir :: Permissions
     }
   deriving (Show)
@@ -148,11 +147,11 @@ getSizeD Dir {..} = do
 countSize :: [String] -> FS Integer
 countSize [] = return 0
 countSize [x] = do
-   fs@FileSystem {..} <- get
-   let d = HM.lookup x mapFile
-   case d of
-     Nothing -> return 0
-     Just args -> return (getSizeF args)
+  fs@FileSystem {..} <- get
+  let d = HM.lookup x mapFile
+  case d of
+    Nothing   -> return 0
+    Just args -> return (getSizeF args)
 countSize (x:xs) = do
   cx <- countSize [x]
   cy <- countSize xs
@@ -169,9 +168,9 @@ data File =
     { name    :: String
     , fPath   :: String
     , content :: String
-    , perms :: Permissions
-    , time :: UTCTime
-    , sizeF :: Integer
+    , perms   :: Permissions
+    , time    :: UTCTime
+    , sizeF   :: Integer
     }
   deriving (Show)
 
@@ -195,6 +194,7 @@ getSizeF File {..} = sizeF
 
 getExtension :: File -> String
 getExtension File {..} = last (splitOn "." (takeMyFileName fPath))
+
 -------------------------------------------------------------------
 lsFunc :: FS String
 lsFunc = do
@@ -203,9 +203,9 @@ lsFunc = do
   case d of
     Just args -> do
       let a = getFiles args
-      let st = intercalate " " a
+      let st = unwords a
       let b = getFolders args
-      let s = intercalate " " b
+      let s = unwords b
       return (st ++ " " ++ s)
     Nothing -> return ""
 
@@ -246,7 +246,7 @@ tryCdMinDir now one = do
              let d = HM.lookup maybePath mapDir
              case d of
                Just args -> return $ Just maybePath
-               Nothing -> return Nothing
+               Nothing   -> return Nothing
 
 firstParts :: [String] -> [String]
 firstParts [x] = []
@@ -260,7 +260,7 @@ findFunc FindOptions {findName = name} = do
   fs@FileSystem {..} <- get
   t <- findAllFiles nowDir
   m <- liftIO $ filterM (\x -> convertBool (name == takeFName x)) t
-  return (intercalate " " m)
+  return (unwords m)
 
 convertBool :: Bool -> IO Bool
 convertBool = return
@@ -293,9 +293,8 @@ catFunc CatOptions {..} = do
         else do
           let f = HM.lookup (last m) mapFile
           case f of
-            Nothing -> return ""
+            Nothing   -> return ""
             Just args -> return (getContent args)
-
 
 takeMyFileName :: String -> String
 takeMyFileName s = last (splitOn "/" s)
@@ -378,14 +377,12 @@ mkFileFunc MkFileOptions {..} = do
           let newFs = FileSystem nowDir initDir newMapDir mapTemp
           put newFs
           return ""
-        else return "file already exist" 
+        else return "file already exist"
 
-
-mkUTCTime:: (Integer, Int, Int) -> (Int, Int, Pico) -> UTCTime
+mkUTCTime :: (Integer, Int, Int) -> (Int, Int, Pico) -> UTCTime
 mkUTCTime (year, mon, day) (hour, min, sec) =
-  UTCTime (fromGregorian year mon day)
-          (timeOfDayToTime (TimeOfDay hour min sec))
-          
+  UTCTime (fromGregorian year mon day) (timeOfDayToTime (TimeOfDay hour min sec))
+
 mkDirFunc :: MkDirOptions -> FS String
 mkDirFunc MkDirOptions {..} = do
   fs@FileSystem {..} <- get
@@ -406,4 +403,5 @@ mkDirFunc MkDirOptions {..} = do
           let newFs = FileSystem nowDir initDir newMap mapFile
           put newFs
           return ""
-        else return "folder already exist" 
+        else return "folder already exist"
+----------------------------------------------------------------------------------

@@ -1,14 +1,7 @@
 module Functions
-  ( --cdFunc
- -- , lsFunc
---    catFunc
---    mkFileFunc
-  -- mkDirFunc
-   rmFunc
+  ( rmFunc
   , wr2FileFunc
-  --, findFunc
   , dirFunc
---  , infFunc
   ) where
 
 import           Types
@@ -19,9 +12,7 @@ import           System.FilePath
 import           System.FilePath.Find
 import           System.FilePath.Posix
 
-
 ----------------------------------------------------------------------------------------
-
 cdFunc :: CdOptions -> IO ()
 cdFunc CdOptions {cdDir = dir} = do
   exist <- doesPathExist dir
@@ -87,12 +78,6 @@ dirFunc DirOptions {dirName = name} = do
   t <- findAllFiles name
   print t
 
---findFunc :: FindOptions -> IO ()
---findFunc FindOptions {findName = name} = do
---  t <- findAllFiles "."
---  m <- filterM (\x -> convertBool (name == takeFName x)) t
---  print m
-
 infFunc :: InfOptions -> IO ()
 infFunc InfOptions {infName = name} = do
   exist <- doesFileExist name
@@ -104,7 +89,6 @@ infFunc InfOptions {infName = name} = do
         then removeDirectoryRecursive name
         else print "file|directory isn't found"
 
---helpful
 convertBool :: Bool -> IO Bool
 convertBool = return
 
@@ -117,9 +101,6 @@ fileDirContents path = do
   files <- filterM doesFileExist contents
   dirs <- filterM doesDirectoryExist contents
   return (files, dirs)
-  
---takeFName :: FilePath -> FilePath
---takeFName = snd . splitFileName
 
 findAllFiles :: FilePath -> IO [FilePath]
 findAllFiles path = do
