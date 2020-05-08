@@ -10,11 +10,13 @@ module FileSystemFunctions
   , cdFunc
   , findFunc
   , catFunc
+  , infFunc
   ) where
 
 import           Types
 
 import           Control.Monad
+import Data.Time.Clock
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.State
@@ -36,10 +38,15 @@ initFileFromReal :: FilePath -> FS File
 initFileFromReal fp = do
   let s = takeFName fp
   m <- liftIO (readFile fp)
-  return (File s fp m)
+  p <- liftIO (getPermissions fp)
+  k <- liftIO (getModificationTime fp)
+  r <- liftIO (getFileSize fp)
+  return (File s fp m p k r)
 
 initDirFromReal :: FilePath -> FS Dir
-initDirFromReal fp = return (FileSystemFunctions.Dir [] [] fp)
+initDirFromReal fp =  do
+    p <- liftIO (getPermissions fp)
+    return (FileSystemFunctions.Dir [] [] fp p)
 
 toKVDir :: Dir -> FS (FilePath, Dir)
 toKVDir d@FileSystemFunctions.Dir {path = p} = return (p, d)
@@ -71,7 +78,8 @@ findAllFilesMy path = do
   let filestemp = HM.fromList myfilesKV
   let newMapDir = HM.unions [dirstemp, mapDir]
   let newMapFile = HM.unions [filestemp, mapFile]
-  let newDir = Dir dirs files path
+  p <- liftIO (getPermissions path)
+  let newDir = Dir dirs files path p
   let newMapDirt = HM.delete path newMapDir
   let newMapDir = HM.insert path newDir newMapDirt
   let newFs = FileSystem nowDir initDir newMapDir newMapFile
@@ -82,7 +90,8 @@ findAllFilesMy path = do
 init :: String -> FS String
 init dir = do
   fs@FileSystem {..} <- get
-  let d = FileSystemFunctions.Dir [] [] dir
+  p <- liftIO (getPermissions dir)
+  let d = FileSystemFunctions.Dir [] [] dir p
   let newMapDir = HM.insert dir d mapDir
   let newFs = FileSystem dir dir newMapDir mapFile
   put newFs
@@ -112,6 +121,7 @@ data Dir =
     { folders :: [String]
     , files   :: [String]
     , path    :: String
+    , permsDir :: Permissions
     }
   deriving (Show)
 
@@ -124,11 +134,41 @@ getFiles Dir {..} = files
 getPath :: Dir -> String
 getPath Dir {..} = path
 
+getPermsDir :: Dir -> Permissions
+getPermsDir Dir {..} = permsDir
+
+getSizeD :: Dir -> FS Integer
+getSizeD Dir {..} = do
+  allF <- findAllFiles path
+  countSize allF
+
+countSize :: [String] -> FS Integer
+countSize [] = return 0
+countSize [x] = do
+   fs@FileSystem {..} <- get
+   let d = HM.lookup x mapFile
+   case d of
+     Nothing -> return 0
+     Just args -> return (getSizeF args)
+countSize (x:xs) = do
+  cx <- countSize [x]
+  cy <- countSize xs
+  let t = cx + cy
+  return t
+
+countAmount :: Dir -> FS Int
+countAmount Dir {..} = do
+  allF <- findAllFiles path
+  return (length allF)
+
 data File =
   File
     { name    :: String
     , fPath   :: String
     , content :: String
+    , perms :: Permissions
+    , time :: UTCTime
+    , sizeF :: Integer
     }
   deriving (Show)
 
@@ -141,6 +181,17 @@ getFPath File {..} = fPath
 getContent :: File -> String
 getContent File {..} = content
 
+getPerms :: File -> Permissions
+getPerms File {..} = perms
+
+getTime :: File -> UTCTime
+getTime File {..} = time
+
+getSizeF :: File -> Integer
+getSizeF File {..} = sizeF
+
+getExtension :: File -> String
+getExtension File {..} = last (splitOn "." (takeMyFileName fPath))
 -------------------------------------------------------------------
 lsFunc :: FS String
 lsFunc = do
@@ -245,3 +296,61 @@ catFunc CatOptions {..} = do
 
 takeMyFileName :: String -> String
 takeMyFileName s = last (splitOn "/" s)
+
+infFunc :: InfOptions -> FS String
+infFunc InfOptions {..} = do
+  a <- infFile infName
+  b <- infDir infName
+  let s = a ++ "\n" ++ b
+  return s
+
+infFile :: String -> FS String
+infFile str = do
+  fs@FileSystem {..} <- get
+  let d = HM.lookup nowDir mapDir
+  case d of
+    Just args -> do
+      let f = getFiles args
+      m <- liftIO $ filterM (\x -> convertBool (str == takeMyFileName x)) f
+      if null m
+        then return "file not found"
+        else do
+          let f = HM.lookup (last m) mapFile
+          case f of
+            Nothing -> return "file not found"
+            Just args -> do
+              let str =
+                    "path: " ++
+                    getFPath args ++
+                    "\npermissions: " ++
+                    show (getPerms args) ++
+                    "\nextension: " ++
+                    getExtension args ++
+                    "\ntime of modification: " ++ show (getTime args) ++ "\nsize: " ++ show (getSizeF args)
+              return str
+    Nothing -> return ""
+
+infDir :: String -> FS String
+infDir str = do
+  fs@FileSystem {..} <- get
+  let d = HM.lookup nowDir mapDir
+  case d of
+    Just args -> do
+      let f = getFolders args
+      m <- liftIO $ filterM (\x -> convertBool (str == takeMyFileName x)) f
+      if null m
+        then return "dir not found"
+        else do
+          let f = HM.lookup (last m) mapDir
+          case f of
+            Nothing -> return "dir not found"
+            Just args -> do
+              t <- getSizeD args
+              u <- countAmount args
+              let str =
+                    "path: " ++
+                    getPath args ++
+                    "\npermissions: " ++
+                    show (getPermsDir args) ++ "\nfile's amount: " ++ show u ++ "\nsize: " ++ show t
+              return str
+    Nothing -> return ""

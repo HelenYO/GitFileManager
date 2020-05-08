@@ -2,7 +2,6 @@ module Main where
 
 import qualified Data.HashMap              as HM
 import           FileSystemFunctions
-import           FileSystemFunctions       (Dir (..), FileSystem (..))
 import           Functions
 import           Types
 
@@ -11,12 +10,10 @@ import           Data.String.Conversions
 import           Data.Text                 (Text, pack)
 
 import           Options.Applicative
-import           Options.Applicative       (switch)
 import           System.Console.Haskeline
 import           System.Directory
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.State (runStateT)
 import           Control.Monad.Trans.State
 import           Control.Monad.Trans.Class
 
@@ -27,6 +24,7 @@ cmdParser =
     <> command "cd" cdInfo
     <> command "find-file" findInfo
     <> command "cat" catInfo
+    <> command "info" infInfo
     )
   where
     lsInfo =
@@ -41,6 +39,10 @@ cmdParser =
             (progDesc "find-file")
     catInfo =
           info (helper <*> (catFunc <$> (CatOptions <$> argument str (metavar "PATH" <> help "cat help")))) (progDesc "cat")
+    infInfo =
+          info
+            (helper <*> (infFunc <$> (InfOptions <$> argument str (metavar "PATH" <> help "info help"))))
+            (progDesc "info")
 --    lsInfo =
 --      info
 --        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))

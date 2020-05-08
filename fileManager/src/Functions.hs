@@ -8,7 +8,7 @@ module Functions
   , wr2FileFunc
   --, findFunc
   , dirFunc
-  , infFunc
+--  , infFunc
   ) where
 
 import           Types
