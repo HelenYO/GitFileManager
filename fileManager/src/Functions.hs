@@ -1,6 +1,6 @@
 module Functions
   ( cdFunc
-  , lsFunc
+ -- , lsFunc
   , catFunc
   , mkFileFunc
   , mkDirFunc
