@@ -26,6 +26,7 @@ cmdParser =
     <> command "cat" catInfo
     <> command "info" infInfo
     <> command "create-file" mkFileInfo
+    <> command "create-folder" mkDirInfo
     )
   where
     lsInfo =
@@ -48,6 +49,10 @@ cmdParser =
           info
             (helper <*> (mkFileFunc <$> (MkFileOptions <$> argument str (metavar "PATH" <> help "create-file help"))))
             (progDesc "create-file")
+    mkDirInfo =
+           info
+             (helper <*> (mkDirFunc <$> (MkDirOptions <$> argument str (metavar "PATH" <> help "create-folder help"))))
+             (progDesc "create-folder")
 --    lsInfo =
 --      info
 --        (helper <*> (psevdolsFunc <$> (LsOptions <$> argument str (metavar "PATH" <> help "ls help"))))

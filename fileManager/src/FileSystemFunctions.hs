@@ -12,6 +12,7 @@ module FileSystemFunctions
   , catFunc
   , infFunc
   , mkFileFunc
+  , mkDirFunc
   ) where
 
 import           Types
@@ -19,7 +20,6 @@ import           Types
 import           Control.Monad
 import Data.Fixed
 import Data.Time
---import Data.Time.Calendar.Days(Day)
 import Data.Time.Clock
 
 import           Control.Monad.IO.Class
@@ -359,7 +359,7 @@ infDir str = do
     Nothing -> return ""
 
 mkFileFunc :: MkFileOptions -> FS String
-mkFimkFileFunc MkFileOptions {..} = do
+mkFileFunc MkFileOptions {..} = do
   fs@FileSystem {..} <- get
   let d = HM.lookup nowDir mapDir
   case d of
@@ -378,7 +378,32 @@ mkFimkFileFunc MkFileOptions {..} = do
           let newFs = FileSystem nowDir initDir newMapDir mapTemp
           put newFs
           return ""
-        else return "file already exist" :: (Integer, Int, Int) -> (Int, Int, Pico) -> UTCTime
+        else return "file already exist" 
+
+
+mkUTCTime:: (Integer, Int, Int) -> (Int, Int, Pico) -> UTCTime
 mkUTCTime (year, mon, day) (hour, min, sec) =
   UTCTime (fromGregorian year mon day)
           (timeOfDayToTime (TimeOfDay hour min sec))
+          
+mkDirFunc :: MkDirOptions -> FS String
+mkDirFunc MkDirOptions {..} = do
+  fs@FileSystem {..} <- get
+  let d = HM.lookup nowDir mapDir
+  case d of
+    Nothing -> return ""
+    Just args -> do
+      let f = getFolders args
+      m <- liftIO $ filterM (\x -> convertBool (mkDir == takeMyFileName x)) f
+      if null m
+        then do
+          let newPath = nowDir ++ "/" ++ mkDir
+          let newDir = Dir [] [] newPath (getPermsDir args)
+          let newMapTemp = HM.insert newPath newDir mapDir
+          let newDirs = getFolders args ++ [newPath]
+          let tempDirMap = HM.delete nowDir newMapTemp
+          let newMap = HM.insert nowDir (Dir newDirs (getFiles args) nowDir (getPermsDir args)) tempDirMap
+          let newFs = FileSystem nowDir initDir newMap mapFile
+          put newFs
+          return ""
+        else return "folder already exist" 
